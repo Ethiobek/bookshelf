@@ -84,8 +84,19 @@ function StatusButtons({user, book}) {
     ({bookId}) => client('list-items', {data: {bookId}, token: user.token}),
     {onSettled: () => queryCache.invalidateQueries('list-items')},
   )
+
   const [remove] = useMutation(
     ({id}) => client(`list-items/${id}`, {method: 'DELETE', token: user.token}),
+    {onSettled: () => queryCache.invalidateQueries('list-items')},
+  )
+
+  const [update] = useMutation(
+    updates =>
+      client(`list-items/${updates.id}`, {
+        method: 'PUT',
+        data: updates,
+        token: user.token,
+      }),
     {onSettled: () => queryCache.invalidateQueries('list-items')},
   )
 
@@ -96,15 +107,14 @@ function StatusButtons({user, book}) {
           <TooltipButton
             label="Unmark as read"
             highlight={colors.yellow}
-            // 🐨 add an onClick here that calls update with the data we want to update
-            // 💰 to mark a list item as unread, set the finishDate to null
-            // {id: listItem.id, finishDate: null}
+            onClick={() => update({id: listItem.id, finishDate: null})}
             icon={<FaBook />}
           />
         ) : (
           <TooltipButton
             label="Mark as read"
             highlight={colors.green}
+            onClick={() => update({id: listItem.id, finishDate: Date.now()})}
             // 🐨 add an onClick here that calls update with the data we want to update
             // 💰 to mark a list item as read, set the finishDate
             // {id: listItem.id, finishDate: Date.now()}
