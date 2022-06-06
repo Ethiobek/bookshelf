@@ -11,10 +11,12 @@ import {
 } from 'react-icons/fa'
 import Tooltip from '@reach/tooltip'
 // 🐨 you'll need useQuery, useMutation, and queryCache from 'react-query'
+import {useQuery, useMutation, queryCache} from 'react-query'
 // 🐨 you'll also need client from 'utils/api-client'
 import {useAsync} from 'utils/hooks'
 import * as colors from 'styles/colors'
 import {CircleButton, Spinner} from './lib'
+import {client} from 'utils/api-client.final'
 
 function TooltipButton({label, highlight, onClick, icon, ...rest}) {
   const {isLoading, isError, error, run} = useAsync()
@@ -54,7 +56,12 @@ function StatusButtons({user, book}) {
 
   // 🐨 search through the listItems you got from react-query and find the
   // one with the right bookId.
-  const listItem = null
+  const {data: listItems} = useQuery({
+    queryKey: 'list-items',
+    queryFn: () =>
+      client('list-items', {token: user.token}).then(data => data.listItems),
+  })
+  const listItem = listItems?.find(li => li.bookId === book.id) ?? null
 
   // 💰 for all the mutations below, if you want to get the list-items cache
   // updated after this query finishes the use the `onSettled` config option
@@ -71,6 +78,12 @@ function StatusButtons({user, book}) {
   // 🐨 call useMutation here and assign the mutate function to "create"
   // the mutate function should call the list-items endpoint with a POST
   // and the bookId the listItem is being created for.
+
+  //create is the function that triggers the mutation
+  const [create] = useMutation(
+    ({bookId}) => client('list-items', {data: {bookId}, token: user.token}),
+    {onSettled: () => queryCache.invalidateQueries('list-items')},
+  )
 
   return (
     <React.Fragment>
@@ -108,6 +121,7 @@ function StatusButtons({user, book}) {
           highlight={colors.indigo}
           // 🐨 add an onClick here that calls create
           icon={<FaPlusCircle />}
+          onClick={() => create({bookId: book.id})}
         />
       )}
     </React.Fragment>
